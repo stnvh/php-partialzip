@@ -19,6 +19,9 @@ class PartialData {
 	public static function size() {
 		$size = 0;
 		foreach($this->map as $map) {
+			if(is_string($map[0])) {
+				continue;
+			}
 			$size += $map[0];
 		}
 		return $size;
@@ -56,9 +59,6 @@ class PartialData {
 			}
 
 			$sect = substr($raw, (isset($pos[2]) ? $pos[2] : $i), $pos[0]);
-			if(isset($pos[2])) {
-
-			}
 			if($pos[1]) {
 				@$sect = unpack($pos[1], $sect)[1];
 			}

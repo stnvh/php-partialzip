@@ -13,18 +13,6 @@ class PartialData {
 	*/);
 
 	/**
-	 * Get header size in byte count
-	 * @return int
-	 */
-	public static function size() {
-		$size = 0;
-		foreach($this->map as $map) {
-			$size += $map[0];
-		}
-		return $size;
-	}
-
-	/**
 	 * @return void
 	 */
 	public function __construct() {
@@ -56,9 +44,6 @@ class PartialData {
 			}
 
 			$sect = substr($raw, (isset($pos[2]) ? $pos[2] : $i), $pos[0]);
-			if(isset($pos[2])) {
-
-			}
 			if($pos[1]) {
 				@$sect = unpack($pos[1], $sect)[1];
 			}
@@ -74,9 +59,9 @@ class PartialData {
 		# If size not populated, fetch from 'extra field'
 		if($this->method == 0x0008 && $this->extra && !$this->size) {
 			$_map = array(
-				'crc32' => $this->map['crc32'],
-				'compressedSize' => $this->map['compressedSize'],
-				'size' => $this->map['size']
+				'crc32' => $map['crc32'],
+				'compressedSize' => $map['compressedSize'],
+				'size' => $map['size']
 			);
 			$this->format($this->extra, $_map);
 			$this->compressedSize = $this->size;

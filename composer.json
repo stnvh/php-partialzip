@@ -11,7 +11,7 @@
         "psr-4": { "Stnvh\\Partial\\": "src/Stnvh/Partial/" }
     },
     "support": {
-        "issues": "https://github.com/stnvh/sphp-partialzip/issues"
+        "issues": "https://github.com/stnvh/php-partialzip/issues"
     },
     "authors": [{
         "name": "Stan Hutcheon",

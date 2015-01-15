@@ -1,0 +1,21 @@
+{
+    "name": "stnvh/php-partialzip",
+    "description": "Download files located within remote ZIP files ",
+    "type": "library",
+    "homepage": "https://github.com/stnvh/php-partialzip",
+    "keywords": ["php", "partial", "zip", "partialzip"],
+    "require": {
+        "php": ">=5.3.2"
+    },
+    "autoload": {
+        "psr-4": { "Stnvh\\Partial\\": "src/Stnvh/Partial/" }
+    },
+    "support": {
+        "issues": "https://github.com/stnvh/sphp-partialzip/issues"
+    },
+    "authors": [{
+        "name": "Stan Hutcheon",
+        "email": "stanhutcheon@me.com",
+        "homepage": "https://github.com/stnvh/"
+    }]
+}

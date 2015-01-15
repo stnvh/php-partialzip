@@ -12,16 +12,6 @@ class Zip {
 	protected $info;
 
 	/**
-	 * cURL dummy callback method
-	 * @param $ch
-	 * @param $data
-	 * @return int
-	 */
-	private function dummyReceive($ch, $data) {
-		return strlen($data);
-	}
-
-	/**
 	 * cURL EOCD callback
 	 * @param $ch
 	 * @param $data
@@ -75,7 +65,6 @@ class Zip {
 	 */
 	public function __construct($url, $file = false) {
 		ob_start();
-		error_reporting(0);
 
 		$this->info = new Data\ZipInfo();
 		$this->info->url = $url;
@@ -92,8 +81,7 @@ class Zip {
 		$request = $this->httpRequest(array(
 			CURLOPT_URL => $this->info->url,
 			CURLOPT_FOLLOWLOCATION => true,
-			CURLOPT_NOBODY => true,
-			CURLOPT_WRITEFUNCTION => array($this, 'dummyReceive')
+			CURLOPT_NOBODY => true
 		));
 		$this->info->length = intval($request['download_content_length']);
 
@@ -107,7 +95,7 @@ class Zip {
 			CURLOPT_HTTPGET => true,
 			CURLOPT_HEADER => false,
 			CURLOPT_FOLLOWLOCATION => true,
-			CURLOPT_RANGE => (string)sprintf('%d-%d', $start, $this->info->length - 1),
+			CURLOPT_RANGE => sprintf('%d-%d', $start, $this->info->length - 1),
 			CURLOPT_WRITEFUNCTION => array($this, 'receiveCentralDirectoryEnd'),
 		));
 
@@ -192,7 +180,7 @@ class Zip {
 	 * @param $output Output the file to the browser instead of returning
 	 * @return true|string
 	 */
-	public function get(CDFile $file, $output = false) {
+	public function get(Data\CDFile $file, $output = false) {
 		$this->tempName = $file->tempName;
 
 		# Get local file header
@@ -203,7 +191,7 @@ class Zip {
 			CURLOPT_HTTPGET => true,
 			CURLOPT_HEADER => false,
 			CURLOPT_FOLLOWLOCATION => true,
-			CURLOPT_RANGE => (string)sprintf('%d-%d', $start, $end),
+			CURLOPT_RANGE => sprintf('%d-%d', $start, $end),
 			CURLOPT_WRITEFUNCTION => array($this, 'receiveLocalHeader')
 		));
 
@@ -218,7 +206,7 @@ class Zip {
 			CURLOPT_HTTPGET => true,
 			CURLOPT_HEADER => false,
 			CURLOPT_FOLLOWLOCATION => true,
-			CURLOPT_RANGE => (string)sprintf('%d-%d', $start, $end),
+			CURLOPT_RANGE => sprintf('%d-%d', $start, $end),
 			CURLOPT_WRITEFUNCTION => array($this, 'receiveData')
 		));
 

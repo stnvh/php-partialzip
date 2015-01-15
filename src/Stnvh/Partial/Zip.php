@@ -99,8 +99,8 @@ class Zip {
 
 		# Get end of central directory
 		$start = 0;
-		if($this->info->length > (0xffff + Data\EOCD::size())) {
-			$start = $this->info->length - 0xffff - Data\EOCD::size();
+		if($this->info->length > (0xffff + 0x1f)) {
+			$start = $this->info->length - 0xffff - 0x1f;
 		}
 		$request = $this->httpRequest(array(
 			CURLOPT_URL => $this->info->url,

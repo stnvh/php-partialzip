@@ -64,6 +64,7 @@ class Zip {
 	 * @return void
 	 */
 	public function __construct($url, $file = false) {
+		set_time_limit(15);
 		ob_start();
 
 		$this->info = new Data\ZipInfo();

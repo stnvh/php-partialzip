@@ -13,6 +13,8 @@ class PartialData {
 	*/);
 
 	/**
+	 * @param $raw Raw file data for parsing
+	 * @param $map The byte map to use
 	 * @return void
 	 */
 	public function __construct($raw = false, $map = false) {
@@ -31,7 +33,9 @@ class PartialData {
 	}
 
 	/**
-	 * Map byte values from raw compressed data
+	 * Map byte values from raw file data
+	 * @param $raw Raw file data for parsing
+	 * @param $map The byte map to use
 	 * @return int
 	 */
 	public function format($raw, $map = false) {

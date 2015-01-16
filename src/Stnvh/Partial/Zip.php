@@ -12,7 +12,7 @@ class Zip {
 	protected $info;
 
 	/**
-	 * cURL EOCD callback
+	 * cURL EOCD callback method
 	 * @param $ch
 	 * @param $data
 	 * @return int
@@ -148,7 +148,7 @@ class Zip {
 	}
 
 	/**
-	 * Searches for file in the central directory
+	 * Searches for a file in the central directory
 	 * @param $fileName The filename to search for (case sensitive)
 	 * @return CDFile|false
 	 */

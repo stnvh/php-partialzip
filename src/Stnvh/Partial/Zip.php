@@ -12,7 +12,7 @@ class Zip {
 	protected $info;
 
 	/**
-	 * cURL EOCD callback
+	 * cURL EOCD callback method
 	 * @param $ch
 	 * @param $data
 	 * @return int
@@ -100,31 +100,20 @@ class Zip {
 			CURLOPT_WRITEFUNCTION => array($this, 'receiveCentralDirectoryEnd'),
 		));
 
-		# Reverse central directory and search for byte sequences:
+		# Reverse central directory end and search for byte sequence:
 		# 06 05 4B 50 = end of central directory (reversed)
-		# 02 01 4B 50 = file entry (reversed)
 		$bytes = array();
-		$centralDirectory = strrev($this->info->centralDirectoryEnd);
+		$cdEnd = strrev($this->info->centralDirectoryEnd);
 		$_fileCount = 0;
-		for($i = 0; $i < strlen($centralDirectory); $i++) {
- 			$bytes[] = sprintf('%02X', ord($centralDirectory[$i]));
+		for($i = 0; $i < strlen($cdEnd); $i++) {
+ 			$bytes[] = sprintf('%02X', ord($cdEnd[$i]));
+
  			# Find end of central directory
 			if(substr(implode('', $bytes), -8) == '06054B50') {
-				$_centralDirectory = strrev(substr($centralDirectory, 0, $i + 1));
+				$cdEnd = new Data\EOCD(strrev(substr($cdEnd, 0, $i + 1)));
 
-				$cdEnd = new Data\EOCD();
-				$cdEnd->format($_centralDirectory);
-
-				$this->info->centralDirectoryDesc = $cdEnd;
-			}
-			# Find last local file header entry
-			if(substr(implode('', $bytes), -8) == '02014B50') {
-				$_fileCount++;
-				# if total entries found
-				if($_fileCount == $this->info->centralDirectoryDesc->CDEntries) {
-					$this->info->centralDirectory = strrev(substr($centralDirectory, 0, $i + 1));
-					break;
-				}
+				$this->info->centralDirectory = substr($this->info->centralDirectoryEnd, $cdEnd->CDOffset - $start, $cdEnd->CDSize);
+				break;
 			}
 		}
 		$bytes = array_reverse($bytes);
@@ -136,9 +125,7 @@ class Zip {
 		$this->info->centralDirectory = array();
 
 		foreach($entries as $raw) {
-			$entry = new Data\CDFile();
-
-			$entry->format($raw);
+			$entry = new Data\CDFile($raw);
 
 			if(substr($entry->name, -1) == '/')  {
 				continue;
@@ -161,7 +148,7 @@ class Zip {
 	}
 
 	/**
-	 * Searches for file in the central directory
+	 * Searches for a file in the central directory
 	 * @param $fileName The filename to search for (case sensitive)
 	 * @return CDFile|false
 	 */
@@ -196,8 +183,7 @@ class Zip {
 			CURLOPT_WRITEFUNCTION => array($this, 'receiveLocalHeader')
 		));
 
-		$local = new Data\LocalFile();
-		$local->format($this->info->localHeader);
+		$local = new Data\LocalFile($this->info->localHeader);
 
 		# Get compressed file data
 		$start = $file->offset + $local->lenHeader;

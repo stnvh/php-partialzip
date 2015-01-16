@@ -15,8 +15,11 @@ class PartialData {
 	/**
 	 * @return void
 	 */
-	public function __construct() {
+	public function __construct($raw = false, $map = false) {
 		$this->tempName = tempnam(sys_get_temp_dir(), 'CDFile');
+		if($raw) {
+			$this->format($raw, $map);
+		}
 	}
 
 	/**

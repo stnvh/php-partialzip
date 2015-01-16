@@ -86,11 +86,12 @@ class Zip {
 		));
 		$this->info->length = intval($request['download_content_length']);
 
-		# Get end of central directory
+		# Fetch end of central directory
 		$start = 0;
 		if($this->info->length > (0xffff + 0x1f)) {
 			$start = $this->info->length - 0xffff - 0x1f;
 		}
+		$_first = $start;
 		$request = $this->httpRequest(array(
 			CURLOPT_URL => $this->info->url,
 			CURLOPT_HTTPGET => true,
@@ -100,23 +101,42 @@ class Zip {
 			CURLOPT_WRITEFUNCTION => array($this, 'receiveCentralDirectoryEnd'),
 		));
 
-		# Reverse central directory end and search for byte sequence:
+		# Reverse end of central directory and search for byte sequence:
 		# 06 05 4B 50 = end of central directory (reversed)
-		$bytes = array();
-		$cdEnd = strrev($this->info->centralDirectoryEnd);
-		$_fileCount = 0;
-		for($i = 0; $i < strlen($cdEnd); $i++) {
- 			$bytes[] = sprintf('%02X', ord($cdEnd[$i]));
+		$_bytes = array();
+		$_cdEnd = strrev($this->info->centralDirectoryEnd);
+		for($i = 0; $i < strlen($_cdEnd); $i++) {
+ 			$_bytes[] = sprintf('%02X', ord($_cdEnd[$i]));
 
  			# Find end of central directory
-			if(substr(implode('', $bytes), -8) == '06054B50') {
-				$cdEnd = new Data\EOCD(strrev(substr($cdEnd, 0, $i + 1)));
-
-				$this->info->centralDirectory = substr($this->info->centralDirectoryEnd, $cdEnd->CDOffset - $start, $cdEnd->CDSize);
+			if(substr(implode('', $_bytes), -8) == '06054B50') {
+				$this->info->centralDirectoryDesc = new Data\EOCD(strrev(substr($_cdEnd, 0, $i + 1)));
 				break;
 			}
 		}
-		$bytes = array_reverse($bytes);
+
+		if($cdEnd = $this->info->centralDirectoryDesc) {
+			$start = $cdEnd->CDOffset;
+			$end = $cdEnd->CDSize - 1;
+
+			if($start - $_first < 0) {
+				# Fetch central directory
+				$request = $this->httpRequest(array(
+					CURLOPT_URL => $this->info->url,
+					CURLOPT_HTTPGET => true,
+					CURLOPT_HEADER => false,
+					CURLOPT_FOLLOWLOCATION => true,
+					CURLOPT_RANGE => sprintf('%d-%d', $start, $end),
+					CURLOPT_WRITEFUNCTION => array($this, 'receiveCentralDirectory'),
+				));
+			} else {
+				# We already have the byte range for the CD
+				$this->info->centralDirectory = substr($this->info->centralDirectoryEnd, $start - $_first, $end);
+			}
+		} else {
+			user_error('End of central directory not found', E_USER_ERROR);
+			return;
+		}
 
 		# split each file entry by byte string & remove empty
 		$entries = explode("\x50\x4b\x01\x02", $this->info->centralDirectory);
@@ -228,5 +248,4 @@ class Zip {
 
 		return $info;
 	}
-
 }

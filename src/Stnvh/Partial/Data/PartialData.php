@@ -30,7 +30,7 @@ class PartialData {
 	 */
 	public function get() {
 		if(!file_exists($this->tempName)) {
-			user_error('Do not call get() directly on file object', E_USER_ERROR);
+			user_error('Temporary filename not set, did you call get() directly on the file object?', E_USER_ERROR);
 			die;
 		}
 		switch($this->method) {
@@ -40,6 +40,7 @@ class PartialData {
 				if(!extension_loaded('bz2')){
 					@dl((strtolower(substr(PHP_OS, 0, 3)) == 'win') ? 'php_bz2.dll' : 'bz2.so');
 				}
+
 				if(extension_loaded('bz2')) {
 					$_method = 'bzdecompress';
 				} else {
@@ -59,7 +60,7 @@ class PartialData {
 
 	/**
 	 * Removes the cached item from the disk
-	 * @return string
+	 * @return void
 	 */
 	public function purge() {
 		if(file_exists($this->tempName)) {

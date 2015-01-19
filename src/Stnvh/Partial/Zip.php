@@ -146,19 +146,20 @@ class Zip {
 		}
 
 		# split each file entry by byte string & remove empty
-		$entries = explode("\x50\x4b\x01\x02", $this->info->centralDirectory);
-		array_shift($entries);
+		$_entries = explode("\x50\x4b\x01\x02", $this->info->centralDirectory);
+		array_shift($_entries);
 
 		$this->info->centralDirectory = array();
 
-		foreach($entries as $raw) {
+		foreach($_entries as $i => $raw) {
 			$entry = new Data\CDFile($raw);
 
 			if($entry->isDir()) {
 				continue;
 			}
- 
-			$this->info->centralDirectory[$entry->name] = $entry;
+ 			
+			$this->info->centralDirectory[$entry->name] = $raw;
+			unset($_entries[$i]); # free mem as we loop
 		}
 	}
 
@@ -168,8 +169,8 @@ class Zip {
 	 */
 	public function index() {
 		$files = array();
-		foreach($this->info->centralDirectory as $file) {
-			$files[] = $file->name;
+		foreach($this->info->centralDirectory as $name => $raw) {
+			$files[] = $name;
 		}
 		return $files;
 	}
@@ -180,9 +181,11 @@ class Zip {
 	 * @return CDFile|false
 	 */
 	public function find($fileName = false) {
-		if($candidate = $this->info->centralDirectory[$fileName]) {
-			$this->info->file = $fileName;
-			return $candidate;
+		foreach($this->info->centralDirectory as $name => $raw) {
+			if($fileName == $name) {
+				$this->info->file = $fileName;
+				return new Data\CDFile($raw);
+			}
 		}
 		return false;
 	}

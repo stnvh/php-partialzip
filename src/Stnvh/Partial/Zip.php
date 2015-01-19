@@ -121,6 +121,7 @@ class Zip {
 
 			if($start - $_first < 0) {
 				# Fetch central directory
+				$end += $start;
 				$request = $this->httpRequest(array(
 					CURLOPT_URL => $this->info->url,
 					CURLOPT_HTTPGET => true,
@@ -147,7 +148,7 @@ class Zip {
 		foreach($entries as $raw) {
 			$entry = new Data\CDFile($raw);
 
-			if(substr($entry->name, -1) == '/')  {
+			if($entry->isDir()) {
 				continue;
 			}
  
@@ -173,10 +174,8 @@ class Zip {
 	 * @return CDFile|false
 	 */
 	public function find($fileName = false) {
-		if($fileName) {
+		if($candidate = $this->info->centralDirectory[$fileName]) {
 			$this->info->file = $fileName;
-		}
-		if($candidate = $this->info->centralDirectory[$this->info->file]) {
 			return $candidate;
 		}
 		return false;

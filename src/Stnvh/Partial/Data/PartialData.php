@@ -18,7 +18,7 @@ class PartialData {
 	 * @return void
 	 */
 	public function __construct($raw = false, $map = false) {
-		$this->tempName = tempnam(sys_get_temp_dir(), 'CDFile');
+		$this->tempName = sys_get_temp_dir() . uniqid('CDFile~');
 		if($raw) {
 			$this->format($raw, $map);
 		}
@@ -29,7 +29,51 @@ class PartialData {
 	 * @return string
 	 */
 	public function get() {
-		return file_get_contents($this->tempName);
+		if(!file_exists($this->tempName)) {
+			user_error('Temporary filename not set, did you call get() directly on the file object?', E_USER_ERROR);
+			die;
+		}
+		switch($this->method) {
+			case 8:
+				$_method = 'gzinflate';
+			case 12:
+				if(!extension_loaded('bz2')){
+					@dl((strtolower(substr(PHP_OS, 0, 3)) == 'win') ? 'php_bz2.dll' : 'bz2.so');
+				}
+
+				if(extension_loaded('bz2')) {
+					$_method = 'bzdecompress';
+				} else {
+					user_error('Unable to decompress, failed to load bz2 extension', E_USER_ERROR);
+					die;
+				}
+			default:
+				$_method = false;
+		}
+
+		if($_method) {
+			return call_user_func_array($_method, array(file_get_contents($this->tempName) . $this->purge()));
+		} else {
+			return file_get_contents($this->tempName) . $this->purge();
+		}
+	}
+
+	/**
+	 * Removes the cached item from the disk
+	 * @return void
+	 */
+	public function purge() {
+		if(file_exists($this->tempName)) {
+			@unlink($this->tempName);
+		}
+	}
+
+	/**
+	 * Determines if the file entry is a directory
+	 * @return bool
+	 */
+	public function isDir() {
+		return (substr($this->name, -1) == '/') ? true : false;
 	}
 
 	/**

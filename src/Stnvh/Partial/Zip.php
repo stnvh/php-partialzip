@@ -84,6 +84,12 @@ class Zip {
 			CURLOPT_FOLLOWLOCATION => true,
 			CURLOPT_NOBODY => true
 		));
+
+		if($request['http_code'] > 400) {
+			user_error(sprintf('Initial request failed, got HTTP status code: %d', $request['http_code']) , E_USER_ERROR);
+			die;
+		}
+
 		$this->info->length = intval($request['download_content_length']);
 
 		# Fetch end of central directory
@@ -121,6 +127,7 @@ class Zip {
 
 			if($start - $_first < 0) {
 				# Fetch central directory
+				$end += $start;
 				$request = $this->httpRequest(array(
 					CURLOPT_URL => $this->info->url,
 					CURLOPT_HTTPGET => true,
@@ -135,23 +142,24 @@ class Zip {
 			}
 		} else {
 			user_error('End of central directory not found', E_USER_ERROR);
-			return;
+			die;
 		}
 
 		# split each file entry by byte string & remove empty
-		$entries = explode("\x50\x4b\x01\x02", $this->info->centralDirectory);
-		array_shift($entries);
+		$_entries = explode("\x50\x4b\x01\x02", $this->info->centralDirectory);
+		array_shift($_entries);
 
 		$this->info->centralDirectory = array();
 
-		foreach($entries as $raw) {
+		foreach($_entries as $i => $raw) {
 			$entry = new Data\CDFile($raw);
 
-			if(substr($entry->name, -1) == '/')  {
+			if($entry->isDir()) {
 				continue;
 			}
- 
-			$this->info->centralDirectory[$entry->name] = $entry;
+ 			
+			$this->info->centralDirectory[$entry->name] = $raw;
+			unset($_entries[$i]); # free mem as we loop
 		}
 	}
 
@@ -161,8 +169,8 @@ class Zip {
 	 */
 	public function index() {
 		$files = array();
-		foreach($this->info->centralDirectory as $file) {
-			$files[] = $file->name;
+		foreach($this->info->centralDirectory as $name => $raw) {
+			$files[] = $name;
 		}
 		return $files;
 	}
@@ -173,11 +181,11 @@ class Zip {
 	 * @return CDFile|false
 	 */
 	public function find($fileName = false) {
-		if($fileName) {
-			$this->info->file = $fileName;
-		}
-		if($candidate = $this->info->centralDirectory[$this->info->file]) {
-			return $candidate;
+		foreach($this->info->centralDirectory as $name => $raw) {
+			if($fileName == $name) {
+				$this->info->file = $fileName;
+				return new Data\CDFile($raw);
+			}
 		}
 		return false;
 	}
@@ -218,15 +226,15 @@ class Zip {
 		));
 
 		if($output) {
-			header(sprintf('Content-Disposition: attachment; filename="%s"', $file->name));
+			header(sprintf('Content-Disposition: attachment; filename="%s"', $file->filename));
 			header(sprintf('Content-Length: %d', $file->size));
 			header('Pragma: public');
 			header('Cache-Control: must-revalidate, post-check=0, pre-check=0');
-			echo gzinflate($file->get());
+			echo $file->get();
 			return true;
 		}
 
-		return gzinflate($file->get());
+		return $file->get();
 	}
 
 	/**

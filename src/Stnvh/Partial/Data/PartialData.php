@@ -33,6 +33,7 @@ class PartialData {
 			user_error('Temporary filename not set, did you call get() directly on the file object?', E_USER_ERROR);
 			die;
 		}
+
 		switch($this->method) {
 			case 8:
 				$_method = 'gzinflate';
@@ -83,8 +84,10 @@ class PartialData {
 	 * @return int
 	 */
 	public function format($raw, $map = false) {
+		$map = $map ?: $this->map;
 		if(!$map) {
-			$map = $this->map;
+			user_error('No byte map specified', E_USER_ERROR);
+			die;
 		}
 
 		$i = 0;

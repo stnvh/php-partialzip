@@ -173,6 +173,13 @@ class Zip {
 	 * @return CDFile|false
 	 */
 	public function find($fileName = false) {
+		$fileName = $fileName ?: $this->info->file;
+		
+		if(!$fileName) {
+			user_error('No filename specified to search', E_USER_ERROR);
+			die;
+		}
+
 		foreach($this->info->centralDirectory as $name => $raw) {
 			if($fileName == $name) {
 				$this->info->file = $fileName;
@@ -189,6 +196,11 @@ class Zip {
 	 * @return true|string
 	 */
 	public function get(Data\CDFile $file, $output = false) {
+		if(!$file) {
+			user_error('No CDFile object specified', E_USER_ERROR);
+			die;
+		}
+
 		$this->tempName = $file->tempName;
 
 		# Get local file header

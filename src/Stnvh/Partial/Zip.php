@@ -84,6 +84,12 @@ class Zip {
 			CURLOPT_FOLLOWLOCATION => true,
 			CURLOPT_NOBODY => true
 		));
+
+		if($request['http_code'] > 400) {
+			user_error(sprintf('Initial request failed, got HTTP status code: %d', $request['http_code']) , E_USER_ERROR);
+			die;
+		}
+
 		$this->info->length = intval($request['download_content_length']);
 
 		# Fetch end of central directory

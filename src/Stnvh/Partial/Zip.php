@@ -136,7 +136,7 @@ class Zip {
 			}
 		} else {
 			user_error('End of central directory not found', E_USER_ERROR);
-			return;
+			die;
 		}
 
 		# split each file entry by byte string & remove empty
@@ -221,11 +221,11 @@ class Zip {
 			header(sprintf('Content-Length: %d', $file->size));
 			header('Pragma: public');
 			header('Cache-Control: must-revalidate, post-check=0, pre-check=0');
-			echo gzinflate($file->get());
+			echo $file->get();
 			return true;
 		}
 
-		return gzinflate($file->get());
+		return $file->get();
 	}
 
 	/**

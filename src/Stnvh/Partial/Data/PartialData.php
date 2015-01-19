@@ -29,10 +29,28 @@ class PartialData {
 	 * @return string
 	 */
 	public function get() {
-		var_dump($this);
-		var_dump(file_get_contents($this->tempName) . $this->purge());
-		die;
-		return file_get_contents($this->tempName) . $this->purge();
+		switch($this->method) {
+			case 8:
+				$_method = 'gzinflate';
+			case 12:
+				if(!extension_loaded('bz2')){
+					@dl((strtolower(substr(PHP_OS, 0, 3)) == 'win') ? 'php_bz2.dll' : 'bz2.so');
+				}
+				if(extension_loaded('bz2')) {
+					$_method = 'bzdecompress';
+				} else {
+					user_error('Unable to decompress, failed to load bz2 extension', E_USER_ERROR);
+					die;
+				}
+			default:
+				$_method = false;
+		}
+
+		if($_method) {
+			return call_user_func_array($_method, array(file_get_contents($this->tempName) . $this->purge()));
+		} else {
+			return file_get_contents($this->tempName) . $this->purge();
+		}
 	}
 
 	/**

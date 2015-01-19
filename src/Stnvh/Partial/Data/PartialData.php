@@ -29,6 +29,10 @@ class PartialData {
 	 * @return string
 	 */
 	public function get() {
+		if(!file_exists($this->tempName)) {
+			user_error('Do not call get() directly on file object', E_USER_ERROR);
+			die;
+		}
 		switch($this->method) {
 			case 8:
 				$_method = 'gzinflate';

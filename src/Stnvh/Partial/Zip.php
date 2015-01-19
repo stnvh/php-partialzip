@@ -217,7 +217,7 @@ class Zip {
 		));
 
 		if($output) {
-			header(sprintf('Content-Disposition: attachment; filename="%s"', $file->name));
+			header(sprintf('Content-Disposition: attachment; filename="%s"', $file->filename));
 			header(sprintf('Content-Length: %d', $file->size));
 			header('Pragma: public');
 			header('Cache-Control: must-revalidate, post-check=0, pre-check=0');

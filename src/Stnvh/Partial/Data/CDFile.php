@@ -28,4 +28,9 @@ class CDFile extends PartialData {
 		'extra' => array('lenExtra', false),
 		'comment' => array('lenComment', false),
 	);
+
+	public function format($raw, $map = false) {
+		parent::format($raw, $map);
+		$this->filename = basename($this->name);
+	}
 }

@@ -29,6 +29,9 @@ class PartialData {
 	 * @return string
 	 */
 	public function get() {
+		var_dump($this);
+		var_dump(file_get_contents($this->tempName) . $this->purge());
+		die;
 		return file_get_contents($this->tempName) . $this->purge();
 	}
 
@@ -40,7 +43,6 @@ class PartialData {
 		if(file_exists($this->tempName)) {
 			@unlink($this->tempName);
 		}
-		return string;
 	}
 
 	/**

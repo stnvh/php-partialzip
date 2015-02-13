@@ -22,7 +22,7 @@ Returns a list of all the files in the remote directory
 ```php
 <?php
 /*...*/
-$list = implode(' ', $p->list()); # = 'cat.png cat2.png cat3.png'
+$list = implode(' ', $p->index()); # = 'cat.png cat2.png cat3.png'
 ```
 
 ###### find($fileName = false):

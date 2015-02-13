@@ -168,6 +168,13 @@ class Zip {
 	}
 
 	/**
+	 * @return array
+	 */
+	public function list() {
+		return $this->index();
+	}
+
+	/**
 	 * Searches for a file in the central directory
 	 * @param $fileName The filename to search for (case sensitive)
 	 * @return CDFile|false

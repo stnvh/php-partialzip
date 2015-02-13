@@ -42,7 +42,7 @@ class PartialData {
 	public function get() {
 		if(!file_exists($this->tempName)) {
 			user_error('Temporary filename not set, did you call get() directly on the file object?', E_USER_ERROR);
-			die;
+			exit;
 		}
 
 		switch($this->method) {
@@ -57,7 +57,7 @@ class PartialData {
 					$_method = 'bzdecompress';
 				} else {
 					user_error('Unable to decompress, failed to load bz2 extension', E_USER_ERROR);
-					die;
+					exit;
 				}
 			default:
 				$_method = false;
@@ -98,7 +98,7 @@ class PartialData {
 		$map = $map ?: $this->map;
 		if(!$map) {
 			user_error('No byte map specified', E_USER_ERROR);
-			die;
+			exit;
 		}
 
 		$i = 0;

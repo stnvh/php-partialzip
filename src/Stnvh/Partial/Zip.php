@@ -177,7 +177,7 @@ class Zip {
 		
 		if(!$fileName) {
 			user_error('No filename specified to search', E_USER_ERROR);
-			die;
+			exit;
 		}
 
 		foreach($this->info->centralDirectory as $name => $raw) {
@@ -198,7 +198,7 @@ class Zip {
 	public function get(Data\CDFile $file, $output = false) {
 		if(!$file) {
 			user_error('No CDFile object specified', E_USER_ERROR);
-			die;
+			exit;
 		}
 
 		$this->tempName = $file->tempName;

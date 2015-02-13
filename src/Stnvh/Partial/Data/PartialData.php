@@ -25,14 +25,26 @@ class PartialData {
 	}
 
 	/**
+	 * @param $name
+	 * @param $args
+	 * @return string|null
+	 */
+	public function __call($name, $args) {
+		if($this->$name && isset($this->map[$name])) {
+			return $this->$name;
+		}
+	}
+
+	/**
 	 * Get file contents from temp file
 	 * @return string
 	 */
 	public function get() {
 		if(!file_exists($this->tempName)) {
 			user_error('Temporary filename not set, did you call get() directly on the file object?', E_USER_ERROR);
-			die;
+			exit;
 		}
+
 		switch($this->method) {
 			case 8:
 				$_method = 'gzinflate';
@@ -45,7 +57,7 @@ class PartialData {
 					$_method = 'bzdecompress';
 				} else {
 					user_error('Unable to decompress, failed to load bz2 extension', E_USER_ERROR);
-					die;
+					exit;
 				}
 			default:
 				$_method = false;
@@ -83,8 +95,10 @@ class PartialData {
 	 * @return int
 	 */
 	public function format($raw, $map = false) {
+		$map = $map ?: $this->map;
 		if(!$map) {
-			$map = $this->map;
+			user_error('No byte map specified', E_USER_ERROR);
+			exit;
 		}
 
 		$i = 0;

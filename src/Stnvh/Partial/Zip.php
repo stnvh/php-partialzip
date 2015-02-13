@@ -107,18 +107,13 @@ class Zip {
 			CURLOPT_WRITEFUNCTION => array($this, 'receiveCentralDirectoryEnd'),
 		));
 
-		# Reverse end of central directory and search for byte sequence:
-		# 06 05 4B 50 = end of central directory (reversed)
-		$_bytes = array();
-		$_cdEnd = strrev($this->info->centralDirectoryEnd);
-		for($i = 0; $i < strlen($_cdEnd); $i++) {
- 			$_bytes[] = sprintf('%02X', ord($_cdEnd[$i]));
-
- 			# Find end of central directory
-			if(substr(implode('', $_bytes), -8) == '06054B50') {
-				$this->info->centralDirectoryDesc = new Data\EOCD(strrev(substr($_cdEnd, 0, $i + 1)));
-				break;
-			}
+		# Get end of central directory and search for byte sequence:
+		# 50 4B 05 06 = end of central directory
+		if($_EOCD = strstr($this->info->centralDirectoryEnd, "\x50\x4b\x05\x06")) {
+			$this->info->centralDirectoryDesc = new Data\EOCD($_EOCD);
+		} else {
+			user_error('End of central directory not found', E_USER_ERROR);
+			die;
 		}
 
 		if($cdEnd = $this->info->centralDirectoryDesc) {
@@ -126,7 +121,7 @@ class Zip {
 			$end = $cdEnd->CDSize - 1;
 
 			if($start - $_first < 0) {
-				# Fetch central directory
+				# Fetch central directory from web
 				$end += $start;
 				$request = $this->httpRequest(array(
 					CURLOPT_URL => $this->info->url,
@@ -140,9 +135,6 @@ class Zip {
 				# We already have the byte range for the CD
 				$this->info->centralDirectory = substr($this->info->centralDirectoryEnd, $start - $_first, $end);
 			}
-		} else {
-			user_error('End of central directory not found', E_USER_ERROR);
-			die;
 		}
 
 		# split each file entry by byte string & remove empty
@@ -181,6 +173,13 @@ class Zip {
 	 * @return CDFile|false
 	 */
 	public function find($fileName = false) {
+		$fileName = $fileName ?: $this->info->file;
+		
+		if(!$fileName) {
+			user_error('No filename specified to search', E_USER_ERROR);
+			exit;
+		}
+
 		foreach($this->info->centralDirectory as $name => $raw) {
 			if($fileName == $name) {
 				$this->info->file = $fileName;
@@ -197,6 +196,11 @@ class Zip {
 	 * @return true|string
 	 */
 	public function get(Data\CDFile $file, $output = false) {
+		if(!$file) {
+			user_error('No CDFile object specified', E_USER_ERROR);
+			exit;
+		}
+
 		$this->tempName = $file->tempName;
 
 		# Get local file header

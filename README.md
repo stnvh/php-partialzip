@@ -15,14 +15,16 @@ Class init method
 ```php
 <?php
 $p = new Partial('http://some.site.com/cats.zip', 'cat.png');
+# or
+$p = new Partial('http://some.site.com/cats.zip');
 ```
 
-###### list():
+###### index():
 Returns a list of all the files in the remote directory
 ```php
 <?php
 /*...*/
-$list = implode(' ', $p->list()); # = 'cat.png cat2.png cat3.png'
+$list = implode(' ', $p->index()); # = 'cat.png cat2.png cat3.png'
 ```
 
 ###### find($fileName = false):
@@ -33,6 +35,11 @@ Returns a parsed file object for use when fetching the remote file
 $file = $p->find(); # Returns the cat.png file object (as set on init)
 # or
 $file = $p->find('cat2.png'); # Search and return other file objects
+
+# You can call methods here to fetch ZIP header information too
+# The full list of file header properties can be found in CDFile.php
+$size = $file->size(); # size in bytes
+$fullName = $file->name(); # full file name in zip, including path
 ```
 
 ###### get($file, $output = false):

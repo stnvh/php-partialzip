@@ -30,7 +30,7 @@ class PartialData {
 	 * @return string|null
 	 */
 	public function __call($name, $args) {
-		if($this->$name && in_array($name, $this->map)) {
+		if($this->$name && isset($this->map[$name])) {
 			return $this->$name;
 		}
 	}

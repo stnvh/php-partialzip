@@ -25,6 +25,17 @@ class PartialData {
 	}
 
 	/**
+	 * @param $name
+	 * @param $args
+	 * @return string|null
+	 */
+	public function __call($name, $args) {
+		if($this->$name && in_array($name, $this->map)) {
+			return $this->$name;
+		}
+	}
+
+	/**
 	 * Get file contents from temp file
 	 * @return string
 	 */

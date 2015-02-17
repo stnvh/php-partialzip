@@ -64,9 +64,6 @@ class Zip {
 	 * @return void
 	 */
 	public function __construct($url, $file = false) {
-		set_time_limit(15);
-		ob_start();
-
 		$this->info = new Data\ZipInfo();
 		$this->info->url = $url;
 		$this->info->file = $file;
@@ -149,7 +146,7 @@ class Zip {
 			if($entry->isDir()) {
 				continue;
 			}
- 			
+
 			$this->info->centralDirectory[$entry->name] = $raw;
 			unset($_entries[$i]); # free mem as we loop
 		}
@@ -174,7 +171,7 @@ class Zip {
 	 */
 	public function find($fileName = false) {
 		$fileName = $fileName ?: $this->info->file;
-		
+
 		if(!$fileName) {
 			user_error('No filename specified to search', E_USER_ERROR);
 			exit;

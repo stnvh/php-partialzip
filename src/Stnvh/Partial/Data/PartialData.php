@@ -48,6 +48,7 @@ class PartialData {
 		switch($this->method) {
 			case 8:
 				$_method = 'gzinflate';
+				break;
 			case 12:
 				if(!extension_loaded('bz2')){
 					@dl((strtolower(substr(PHP_OS, 0, 3)) == 'win') ? 'php_bz2.dll' : 'bz2.so');
@@ -59,8 +60,10 @@ class PartialData {
 					user_error('Unable to decompress, failed to load bz2 extension', E_USER_ERROR);
 					exit;
 				}
+				break;
 			default:
 				$_method = false;
+				break;
 		}
 
 		if($_method) {

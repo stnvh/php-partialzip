@@ -236,6 +236,7 @@ class Zip {
 		));
 
 		if($output) {
+			ob_clean(); # clean output
 			header(sprintf('Content-Disposition: attachment; filename="%s"', $file->filename));
 			header(sprintf('Content-Length: %d', $file->size));
 			header('Pragma: public');

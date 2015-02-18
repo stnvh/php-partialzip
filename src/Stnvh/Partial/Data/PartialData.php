@@ -56,14 +56,13 @@ class PartialData {
 
 				if(extension_loaded('bz2')) {
 					$_method = 'bzdecompress';
+					break;
 				} else {
 					user_error('Unable to decompress, failed to load bz2 extension', E_USER_ERROR);
 					exit;
 				}
-				break;
 			default:
 				$_method = false;
-				break;
 		}
 
 		if($_method) {
@@ -135,7 +134,5 @@ class PartialData {
 			$this->format($this->extra, $_map);
 			$this->compressedSize = $this->size;
 		}
-
-		ob_clean(); # clean output
 	}
 }

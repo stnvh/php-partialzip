@@ -64,7 +64,6 @@ class Zip {
 	 * @return void
 	 */
 	public function __construct($url, $file = false) {
-		set_time_limit(15);
 		ob_start();
 
 		$this->info = new Data\ZipInfo();
@@ -82,12 +81,19 @@ class Zip {
 		$request = $this->httpRequest(array(
 			CURLOPT_URL => $this->info->url,
 			CURLOPT_FOLLOWLOCATION => true,
-			CURLOPT_NOBODY => true
+			CURLOPT_NOBODY => true,
+			CURLOPT_HEADER => true,
+			CURLOPT_RETURNTRANSFER => true
 		));
 
 		if($request['http_code'] > 400) {
 			user_error(sprintf('Initial request failed, got HTTP status code: %d', $request['http_code']) , E_USER_ERROR);
-			die;
+			exit;
+		}
+
+		if(!$request['headers']['Accept-Ranges']) {
+			user_error('Server does not support HTTP range requests', E_USER_ERROR);
+			exit;
 		}
 
 		$this->info->length = intval($request['download_content_length']);
@@ -113,7 +119,7 @@ class Zip {
 			$this->info->centralDirectoryDesc = new Data\EOCD($_EOCD);
 		} else {
 			user_error('End of central directory not found', E_USER_ERROR);
-			die;
+			exit;
 		}
 
 		if($cdEnd = $this->info->centralDirectoryDesc) {
@@ -254,6 +260,17 @@ class Zip {
 		$out = curl_exec($ch);
 
 		$info = curl_getinfo($ch);
+
+		if($conf[CURLOPT_HEADER] && preg_match_all('/(.*): (.*)\r?\n/', $out, $match)) {
+			$_headers = substr($out, 0, $info['header_size']);
+			$headers = array();
+			foreach($match[1] as $i => $header) {
+				$headers[$header] = $match[2][$i];
+			}
+			$info['headers'] = $headers;
+			$out = substr($out, $info['header_size']);
+		}
+
 		$info['response'] = $out;
 
 		curl_close($ch);

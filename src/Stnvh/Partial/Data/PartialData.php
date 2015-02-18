@@ -48,6 +48,7 @@ class PartialData {
 		switch($this->method) {
 			case 8:
 				$_method = 'gzinflate';
+				break;
 			case 12:
 				if(!extension_loaded('bz2')){
 					@dl((strtolower(substr(PHP_OS, 0, 3)) == 'win') ? 'php_bz2.dll' : 'bz2.so');
@@ -55,6 +56,7 @@ class PartialData {
 
 				if(extension_loaded('bz2')) {
 					$_method = 'bzdecompress';
+					break;
 				} else {
 					user_error('Unable to decompress, failed to load bz2 extension', E_USER_ERROR);
 					exit;
@@ -110,7 +112,8 @@ class PartialData {
 
 			$sect = substr($raw, (isset($pos[2]) ? $pos[2] : $i), $pos[0]);
 			if($pos[1]) {
-				$sect = unpack($pos[1], $sect)[1];
+				$sect = unpack($pos[1], $sect);
+				$sect = $sect[1];
 			}
 			$this->$name = $sect;
 
@@ -131,7 +134,5 @@ class PartialData {
 			$this->format($this->extra, $_map);
 			$this->compressedSize = $this->size;
 		}
-
-		ob_clean(); # clean output
 	}
 }

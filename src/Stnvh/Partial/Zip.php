@@ -67,8 +67,6 @@ class Zip {
 	 * @return void
 	 */
 	public function __construct($url, $file = false) {
-		ob_start();
-
 		$this->info = new Data\ZipInfo();
 		$this->info->url = $url;
 		$this->info->file = $file;
@@ -234,7 +232,6 @@ class Zip {
 		));
 
 		if($output) {
-			ob_clean(); # clean output
 			header(sprintf('Content-Disposition: attachment; filename="%s"', $file->filename));
 			header(sprintf('Content-Length: %d', $file->size));
 			header('Pragma: public');

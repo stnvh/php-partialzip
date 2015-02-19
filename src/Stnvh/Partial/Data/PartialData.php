@@ -78,7 +78,7 @@ class PartialData {
 	 * Removes the cached item from the disk
 	 * @return void
 	 */
-	public function purge() {
+	private function purge() {
 		if(file_exists($this->tempName)) {
 			@unlink($this->tempName);
 		}

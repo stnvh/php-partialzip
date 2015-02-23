@@ -43,7 +43,10 @@ $fullName = $file->name(); # full file name in zip, including path
 ```
 
 ###### get($file, $output = false):
-Returns, or outputs the file fetched from the remote ZIP
+Returns, or outputs the file fetched from the remote ZIP.
+
+**Note**: You should ensure no content is outputted before running ```->get($file, true)``` as this will cause the file download to contain invalid data.
+*Hint*: put ```ob_start()``` at the start of your script, then run ```ob_clean()``` before calling get.
 ```php
 <?php
 /*...*/
@@ -63,11 +66,14 @@ require 'vendor/autoload.php';
 
 use Stnvh\Partial\Zip as Partial;
 
+ob_start(); # will capture all output
+
 $p = new Partial('http://some.site.com/cats.zip', 'cat.png');
 
 # Get file object
 $file = $p->find();
 if($file) {
+    ob_clean(); # removes everything from current output to ensure file downloads correctly
     # Output to browser:
     $p->get($file, true);
 }

@@ -4,6 +4,9 @@ namespace Stnvh\Partial;
 
 use Stnvh\Partial\Data;
 
+use \RuntimeException as RuntimeException;
+use \InvalidArgumentException as InvalidArgumentException;
+
 /**
  * Class Zip
  * @package Stnvh\Partial
@@ -64,8 +67,6 @@ class Zip {
 	 * @return void
 	 */
 	public function __construct($url, $file = false) {
-		ob_start();
-
 		$this->info = new Data\ZipInfo();
 		$this->info->url = $url;
 		$this->info->file = $file;
@@ -87,13 +88,11 @@ class Zip {
 		));
 
 		if($request['http_code'] > 400) {
-			user_error(sprintf('Initial request failed, got HTTP status code: %d', $request['http_code']) , E_USER_ERROR);
-			exit;
+			throw new RuntimeException(sprintf('Initial request failed, got HTTP status code: %d', $request['http_code']));
 		}
 
 		if(!$request['headers']['Accept-Ranges']) {
-			user_error('Server does not support HTTP range requests', E_USER_ERROR);
-			exit;
+			throw new RuntimeException('Server does not support HTTP range requests');
 		}
 
 		$this->info->length = intval($request['download_content_length']);
@@ -118,8 +117,7 @@ class Zip {
 		if($_EOCD = strstr($this->info->centralDirectoryEnd, "\x50\x4b\x05\x06")) {
 			$this->info->centralDirectoryDesc = new Data\EOCD($_EOCD);
 		} else {
-			user_error('End of central directory not found', E_USER_ERROR);
-			exit;
+			throw new RuntimeException('End of central directory not found');
 		}
 
 		if($cdEnd = $this->info->centralDirectoryDesc) {
@@ -155,7 +153,7 @@ class Zip {
 			if($entry->isDir()) {
 				continue;
 			}
- 			
+
 			$this->info->centralDirectory[$entry->name] = $raw;
 			unset($_entries[$i]); # free mem as we loop
 		}
@@ -180,10 +178,9 @@ class Zip {
 	 */
 	public function find($fileName = false) {
 		$fileName = $fileName ?: $this->info->file;
-		
+
 		if(!$fileName) {
-			user_error('No filename specified to search', E_USER_ERROR);
-			exit;
+			throw new InvalidArgumentException('No filename specified to search');
 		}
 
 		foreach($this->info->centralDirectory as $name => $raw) {
@@ -203,8 +200,7 @@ class Zip {
 	 */
 	public function get(Data\CDFile $file, $output = false) {
 		if(!$file) {
-			user_error('No CDFile object specified', E_USER_ERROR);
-			exit;
+			throw new InvalidArgumentException('No CDFile object specified');
 		}
 
 		$this->tempName = $file->tempName;
@@ -236,7 +232,6 @@ class Zip {
 		));
 
 		if($output) {
-			ob_clean(); # clean output
 			header(sprintf('Content-Disposition: attachment; filename="%s"', $file->filename));
 			header(sprintf('Content-Length: %d', $file->size));
 			header('Pragma: public');

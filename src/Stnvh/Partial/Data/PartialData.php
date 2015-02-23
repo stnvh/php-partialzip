@@ -2,6 +2,10 @@
 
 namespace Stnvh\Partial\Data;
 
+use \RuntimeException as RuntimeException;
+use \InvalidArgumentException as InvalidArgumentException;
+use \BadMethodCallException as BadMethodCallException;
+
 /**
  * Class PartialData
  * @package Stnvh\Partial\Data
@@ -41,8 +45,7 @@ class PartialData {
 	 */
 	public function get() {
 		if(!file_exists($this->tempName)) {
-			user_error('Temporary filename not set, did you call get() directly on the file object?', E_USER_ERROR);
-			exit;
+			throw new BadMethodCallException('Called before being fetched with Zip->get(). Don\'t call this directly!');
 		}
 
 		switch($this->method) {
@@ -58,8 +61,7 @@ class PartialData {
 					$_method = 'bzdecompress';
 					break;
 				} else {
-					user_error('Unable to decompress, failed to load bz2 extension', E_USER_ERROR);
-					exit;
+					throw new RuntimeException('Unable to decompress, failed to load bz2 extension');
 				}
 			default:
 				$_method = false;
@@ -76,7 +78,7 @@ class PartialData {
 	 * Removes the cached item from the disk
 	 * @return void
 	 */
-	public function purge() {
+	private function purge() {
 		if(file_exists($this->tempName)) {
 			@unlink($this->tempName);
 		}
@@ -99,8 +101,7 @@ class PartialData {
 	public function format($raw, $map = false) {
 		$map = $map ?: $this->map;
 		if(!$map) {
-			user_error('No byte map specified', E_USER_ERROR);
-			exit;
+			throw new InvalidArgumentException('No byte map specified');
 		}
 
 		$i = 0;

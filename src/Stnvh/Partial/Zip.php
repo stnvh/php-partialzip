@@ -164,11 +164,7 @@ class Zip {
 	 * @return array
 	 */
 	public function index() {
-		$files = array();
-		foreach($this->info->centralDirectory as $name => $raw) {
-			$files[] = $name;
-		}
-		return $files;
+		return array_keys($this->info->centralDirectory);
 	}
 
 	/**
@@ -183,12 +179,11 @@ class Zip {
 			throw new InvalidArgumentException('No filename specified to search');
 		}
 
-		foreach($this->info->centralDirectory as $name => $raw) {
-			if($fileName == $name) {
-				$this->info->file = $fileName;
-				return new Data\CDFile($raw);
-			}
+		if (isset($this->info->centralDirectory[$fileName])) {
+			$this->info->file = $fileName;
+			return new Data\CDFile($this->info->centralDirectory[$fileName]);
 		}
+
 		return false;
 	}
 

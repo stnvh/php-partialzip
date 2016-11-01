@@ -7,8 +7,6 @@ namespace Stnvh\Partial\Data;
  * @package Stnvh\Partial\Data
  */
 class ZipInfo {
-	public $centralDirectory = '';
-	public $centralDirectoryEnd = '';
-	public $localHeader = '';
+	public $centralDirectory = array();
 	public $length = 0;
 }

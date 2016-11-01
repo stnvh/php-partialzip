@@ -6,54 +6,49 @@ Based on [planetbeing/partial-zip](https://github.com/planetbeing/partial-zip).
 
 #### Usage:
 
-```composer require stnvh/php-partialzip ~0.1```
+```composer require stnvh/php-partialzip 0.2.x```
 
 ##### Method usage:
 
 ###### __construct($url, $file = false):
 Class init method
 ```php
-<?php
-$p = new Partial('http://some.site.com/cats.zip', 'cat.png');
-# or
 $p = new Partial('http://some.site.com/cats.zip');
 ```
 
 ###### index():
 Returns a list of all the files in the remote directory
 ```php
-<?php
 /*...*/
-$list = implode(' ', $p->index()); # = 'cat.png cat2.png cat3.png'
+
+$list = $p->index(); # = ('cat.png', 'cat2.png', 'cat3.png')
 ```
 
 ###### find($fileName = false):
 Returns a parsed file object for use when fetching the remote file
 ```php
-<?php
 /*...*/
-$file = $p->find(); # Returns the cat.png file object (as set on init)
-# or
-$file = $p->find('cat2.png'); # Search and return other file objects
 
-# You can call methods here to fetch ZIP header information too
-# The full list of file header properties can be found in CDFile.php
-$size = $file->size(); # size in bytes
-$fullName = $file->name(); # full file name in zip, including path
+# Search and return other file objects
+if($file = $p->find('cat2.png')) {
+	# You can call methods here to fetch ZIP header information too
+	# The full list of file header properties can be found in CDFile.php
+	$size = $file->size(); # size in bytes
+	$fullName = $file->name(); # full file name in zip, including path
+}
+
 ```
 
-###### get($file, $output = false):
+###### get($file):
 Returns, or outputs the file fetched from the remote ZIP.
 
-**Note**: You should ensure no content is outputted before running ```->get($file, true)``` as this will cause the file download to contain invalid data.
-*Hint*: put ```ob_start()``` at the start of your script, then run ```ob_clean()``` before calling get.
+**Note**: You should ensure no content is outputted before echo-ing ```->get()``` as this will cause the file download to contain invalid data.
+*Hint*: put ```ob_start()``` at the start of your script, then run ```ob_clean()``` before output.
 ```php
-<?php
 /*...*/
-if($file) {
-    $data = $p->get($file); # Return
-    # or
-    $p->get($file, true); # Output (download)
+
+if($file = $p->find('cat3.png')) {
+    $fileData = $p->get($file);
 }
 ```
 
@@ -68,13 +63,17 @@ use Stnvh\Partial\Zip as Partial;
 
 ob_start(); # will capture all output
 
-$p = new Partial('http://some.site.com/cats.zip', 'cat.png');
+$p = new Partial('http://some.site.com/cats.zip');
 
 # Get file object
-$file = $p->find();
-if($file) {
-    ob_clean(); # removes everything from current output to ensure file downloads correctly
-    # Output to browser:
-    $p->get($file, true);
+if($file = $p->find('cat.png')) {
+	# removes everything from current output to ensure file downloads correctly
+    ob_clean();
+
+    # Set appropriate headers and output to browser:
+	header(sprintf('Content-Disposition: attachment; filename="%s"', $file->filename));
+	header(sprintf('Content-Length: %d', $file->size));
+
+    echo $p->get($file);
 }
 ```

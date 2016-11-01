@@ -22,7 +22,7 @@ class PartialData {
 	 * @return void
 	 */
 	public function __construct($raw = false, $map = false) {
-		$this->tempName = sys_get_temp_dir() . uniqid('CDFile~');
+		$this->tempName = tempnam(sys_get_temp_dir(), 'CDFile~');
 		if($raw) {
 			$this->format($raw, $map);
 		}
@@ -121,12 +121,12 @@ class PartialData {
 			$i += $pos[0];
 		}
 
-		if(!$this->lenHeader) {
+		if(!isset($this->lenHeader)) {
 			$this->lenHeader = $i;
 		}
 
 		# If size not populated, fetch from 'extra field'
-		if($this->method == 0x0008 && $this->extra && !$this->size) {
+		if(isset($this->method) && $this->method == 0x0008 && $this->extra && !$this->size) {
 			$_map = array(
 				'crc32' => $map['crc32'],
 				'compressedSize' => $map['compressedSize'],

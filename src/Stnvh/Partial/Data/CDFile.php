@@ -6,7 +6,7 @@ namespace Stnvh\Partial\Data;
  * Class CDFile
  * @package Stnvh\Partial\Data
  */
-class CDFile extends PartialData {
+class CDFile extends ByteParser {
 	public $map = array(
 		'version' => array(2, 'v*'),
 		'versionExtract' => array(2, 'v*'),

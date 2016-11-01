@@ -7,10 +7,10 @@ use \InvalidArgumentException as InvalidArgumentException;
 use \BadMethodCallException as BadMethodCallException;
 
 /**
- * Class PartialData
+ * Class ByteParser
  * @package Stnvh\Partial\Data
  */
-class PartialData {
+class ByteParser {
 	public $tempName;
 	public $map = array(/*
 		'varName' => array([no of bytes to copy], [unpack() format])

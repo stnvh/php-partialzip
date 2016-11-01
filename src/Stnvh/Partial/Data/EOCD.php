@@ -6,7 +6,7 @@ namespace Stnvh\Partial\Data;
  * Class EOCD
  * @package Stnvh\Partial\Data
  */
-class EOCD extends PartialData {
+class EOCD extends ByteParser {
 	public $map = array(
 		'signature' => array(4, 'V*'),
 		'diskNo' => array(2, 'v*'),

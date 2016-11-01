@@ -12,8 +12,11 @@ use \InvalidArgumentException as InvalidArgumentException;
  * @package Stnvh\Partial
  */
 class Zip {
-	protected $info;
-	protected $initFile;
+	public $length = 0;
+
+	private $url = null;
+	private $centralDirectory = array();
+	private $initFile = null;
 
 	/**
 	 * @param $url URL of ZIP file
@@ -22,9 +25,9 @@ class Zip {
 	 * @return void
 	 */
 	public function __construct($url, $file = false) {
-		$this->info = new Data\ZipInfo();
-		$this->info->url = $url;
+		$this->url = $url;
 		if($file) $this->initFile = $file;
+
 		$this->init();
 	}
 
@@ -33,11 +36,11 @@ class Zip {
 	 * @return void
 	 */
 	public function init() {
-		if($this->info->centralDirectory) return true;
+		if($this->centralDirectory) return true;
 
 		# Get file size
 		$request = $this->httpRequest(array(
-			CURLOPT_URL => $this->info->url,
+			CURLOPT_URL => $this->url,
 			CURLOPT_FOLLOWLOCATION => true,
 			CURLOPT_NOBODY => true,
 			CURLOPT_HEADER => true,
@@ -52,17 +55,17 @@ class Zip {
 			throw new RuntimeException('Server does not support HTTP range requests');
 		}
 
-		$this->info->length = intval($request['download_content_length']);
+		$this->length = intval($request['download_content_length']);
 
 		# Fetch end of central directory
 		$cdEndRangeStart = 0;
-		if($this->info->length > (0xffff + 0x1f)) {
-			$cdEndRangeStart = $this->info->length - 0xffff - 0x1f;
+		if($this->length > (0xffff + 0x1f)) {
+			$cdEndRangeStart = $this->length - 0xffff - 0x1f;
 		}
 
 		$cdEnd = $this->getRange(
 			$cdEndRangeStart,
-			$this->info->length - 1
+			$this->length - 1
 		);
 
 		# Get end of central directory and search for byte sequence:
@@ -103,7 +106,7 @@ class Zip {
 				continue;
 			}
 
-			$this->info->centralDirectory[$entry->name] = $raw;
+			$this->centralDirectory[$entry->name] = $raw;
 
 			unset($entry);
 		}
@@ -118,7 +121,7 @@ class Zip {
 	 * @return array
 	 */
 	public function index() {
-		return array_keys($this->info->centralDirectory);
+		return array_keys($this->centralDirectory);
 	}
 
 	/**
@@ -133,8 +136,8 @@ class Zip {
 			throw new InvalidArgumentException('No filename specified to search');
 		}
 
-		if(isset($this->info->centralDirectory[$fileName])) {
-			return new Data\CDFile($this->info->centralDirectory[$fileName]);
+		if(isset($this->centralDirectory[$fileName])) {
+			return new Data\CDFile($this->centralDirectory[$fileName]);
 		}
 
 		return false;
@@ -146,9 +149,7 @@ class Zip {
 	 * @return true|string
 	 */
 	public function get(Data\CDFile $file) {
-		if(!$file) {
-			throw new InvalidArgumentException('No CDFile object specified');
-		}
+		if(!$file) throw new InvalidArgumentException('No CDFile object specified');
 
 		$localFileHeaderRaw = $this->getRange(
 			$file->offset,
@@ -160,7 +161,7 @@ class Zip {
 		$localFileHeader = new Data\LocalFile($localFileHeaderRaw);
 
 		# Get compressed file data
-		$this->putTemp($file, $this->getRange(
+		$this->writeTemp($file->tempName, $this->getRange(
 			$file->offset + $localFileHeader->lenHeader,
 			$file->offset + $localFileHeader->lenHeader + $file->compressedSize - 1
 		));
@@ -200,19 +201,6 @@ class Zip {
 	}
 
 	/**
-	 * Writes a temporary file
-	 * @param $file
-	 * @param $data
-	 * @return int
-	 */
-	private function putTemp(Data\CDFile $file, $data) {
-		$f = fopen($file->tempName, 'a');
-		fputs($f, $data);
-		fclose($f);
-		return strlen($data);
-	}
-
-	/**
 	 * Fetches a byte range from the global file URL
 	 * @param $start
 	 * @param $end
@@ -220,13 +208,26 @@ class Zip {
 	 */
 	private function getRange($start, $end) {
 		return $this->httpRequest(array(
-			CURLOPT_URL => $this->info->url,
+			CURLOPT_URL => $this->url,
 			CURLOPT_HTTPGET => true,
 			CURLOPT_HEADER => false,
 			CURLOPT_FOLLOWLOCATION => true,
 			CURLOPT_RANGE => sprintf('%d-%d', $start, $end),
 			CURLOPT_RETURNTRANSFER => true
 		))['response'];
+	}
+
+	/**
+	 * Writes a temporary file
+	 * @param $file
+	 * @param $data
+	 * @return int
+	 */
+	private function writeTemp($fileName, $data) {
+		$f = fopen($fileName, 'a');
+		fputs($f, $data);
+		fclose($f);
+		return strlen($data);
 	}
 
 }

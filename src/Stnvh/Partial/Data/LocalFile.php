@@ -6,7 +6,7 @@ namespace Stnvh\Partial\Data;
  * Class LocalFile
  * @package Stnvh\Partial\Data
  */
-class LocalFile extends PartialData {
+class LocalFile extends ByteParser {
 	public $map = array(
 		'signature' => array(4, 'V*'),
 		'version' => array(2, 'v*'),

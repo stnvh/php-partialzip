@@ -114,7 +114,7 @@ class PartialData {
 			$sect = substr($raw, (isset($pos[2]) ? $pos[2] : $i), $pos[0]);
 			if($pos[1]) {
 				$sect = unpack($pos[1], $sect);
-				$sect = $sect[1];
+				$sect = isset($sect[1]) ? $sect[1] : null;
 			}
 			$this->$name = $sect;
 

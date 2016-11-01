@@ -13,52 +13,7 @@ use \InvalidArgumentException as InvalidArgumentException;
  */
 class Zip {
 	protected $info;
-
-	/**
-	 * cURL EOCD callback method
-	 * @param $ch
-	 * @param $data
-	 * @return int
-	 */
-	private function receiveCentralDirectoryEnd($ch, $data) {
-		$this->info->centralDirectoryEnd .= $data;
-		return strlen($data);
-	}
-
-	/**
-	 * cURL central directory callback method
-	 * @param $ch
-	 * @param $data
-	 * @return int
-	 */
-	private function receiveCentralDirectory($ch, $data) {
-		$this->info->centralDirectory .= $data;
-		return strlen($data);
-	}
-
-	/**
-	 * cURL local file header callback method
-	 * @param $ch
-	 * @param $data
-	 * @return int
-	 */
-	private function receiveLocalHeader($ch, $data) {
-		$this->info->localHeader .= $data;
-		return strlen($data);
-	}
-
-	/**
-	 * cURL file data callback method
-	 * @param $ch
-	 * @param $data
-	 * @return int
-	 */
-	private function receiveData($ch, $data) {
-		$f = fopen($this->tempName, 'a');
-		fputs($f, $data);
-		fclose($f);
-		return strlen($data);
-	}
+	protected $initFile;
 
 	/**
 	 * @param $url URL of ZIP file
@@ -69,7 +24,7 @@ class Zip {
 	public function __construct($url, $file = false) {
 		$this->info = new Data\ZipInfo();
 		$this->info->url = $url;
-		$this->info->file = $file;
+		if($file) $this->initFile = $file;
 		$this->init();
 	}
 
@@ -78,6 +33,8 @@ class Zip {
 	 * @return void
 	 */
 	public function init() {
+		if($this->info->centralDirectory) return true;
+
 		# Get file size
 		$request = $this->httpRequest(array(
 			CURLOPT_URL => $this->info->url,
@@ -98,65 +55,60 @@ class Zip {
 		$this->info->length = intval($request['download_content_length']);
 
 		# Fetch end of central directory
-		$start = 0;
+		$cdEndRangeStart = 0;
 		if($this->info->length > (0xffff + 0x1f)) {
-			$start = $this->info->length - 0xffff - 0x1f;
+			$cdEndRangeStart = $this->info->length - 0xffff - 0x1f;
 		}
-		$_first = $start;
-		$request = $this->httpRequest(array(
-			CURLOPT_URL => $this->info->url,
-			CURLOPT_HTTPGET => true,
-			CURLOPT_HEADER => false,
-			CURLOPT_FOLLOWLOCATION => true,
-			CURLOPT_RANGE => sprintf('%d-%d', $start, $this->info->length - 1),
-			CURLOPT_WRITEFUNCTION => array($this, 'receiveCentralDirectoryEnd'),
-		));
+
+		$cdEnd = $this->getRange(
+			$cdEndRangeStart,
+			$this->info->length - 1
+		);
 
 		# Get end of central directory and search for byte sequence:
 		# 50 4B 05 06 = end of central directory
-		if($_EOCD = strstr($this->info->centralDirectoryEnd, "\x50\x4b\x05\x06")) {
-			$this->info->centralDirectoryDesc = new Data\EOCD($_EOCD);
+		if($eocd = strstr($cdEnd, "\x50\x4b\x05\x06")) {
+			$cdDesc = new Data\EOCD($eocd);
 		} else {
 			throw new RuntimeException('End of central directory not found');
 		}
 
-		if($cdEnd = $this->info->centralDirectoryDesc) {
-			$start = $cdEnd->CDOffset;
-			$end = $cdEnd->CDSize - 1;
+		if($cdDesc) {
+			$cdRangeStart = $cdDesc->CDOffset;
+			$cdRangeEnd = $cdDesc->CDSize - 1;
 
-			if($start - $_first < 0) {
+			if($cdRangeStart - $cdEndRangeStart < 0) {
 				# Fetch central directory from web
-				$end += $start;
-				$request = $this->httpRequest(array(
-					CURLOPT_URL => $this->info->url,
-					CURLOPT_HTTPGET => true,
-					CURLOPT_HEADER => false,
-					CURLOPT_FOLLOWLOCATION => true,
-					CURLOPT_RANGE => sprintf('%d-%d', $start, $end),
-					CURLOPT_WRITEFUNCTION => array($this, 'receiveCentralDirectory'),
-				));
+				$cdRangeEnd += $cdRangeStart;
+
+				$centralDirectoryRaw = $this->getRange(
+					$cdRangeStart,
+					$cdRangeEnd
+				);
 			} else {
 				# We already have the byte range for the CD
-				$this->info->centralDirectory = substr($this->info->centralDirectoryEnd, $start - $_first, $end);
+				$centralDirectoryRaw = substr($cdEnd, $cdRangeStart - $cdEndRangeStart, $cdRangeEnd);
 			}
 		}
 
 		# split each file entry by byte string & remove empty
-		$_entries = explode("\x50\x4b\x01\x02", $this->info->centralDirectory);
-		array_shift($_entries);
+		$cdEntries = explode("\x50\x4b\x01\x02", $centralDirectoryRaw);
 
-		$this->info->centralDirectory = array();
+		array_shift($cdEntries);
 
-		foreach($_entries as $i => $raw) {
+		foreach($cdEntries as $raw) {
 			$entry = new Data\CDFile($raw);
 
 			if($entry->isDir()) {
 				continue;
 			}
 
-			$this->info->centralDirectory[$entry->name] = $raw;
-			unset($_entries[$i]); # free mem as we loop
+			$this->info->centralDirectory[$entry->name] = $entry;
 		}
+
+		unset($cdEntries);
+
+		return true;
 	}
 
 	/**
@@ -173,14 +125,13 @@ class Zip {
 	 * @return CDFile|false
 	 */
 	public function find($fileName = false) {
-		$fileName = $fileName ?: $this->info->file;
+		$fileName = $fileName ?: $this->initFile;
 
 		if(!$fileName) {
 			throw new InvalidArgumentException('No filename specified to search');
 		}
 
-		if (isset($this->info->centralDirectory[$fileName])) {
-			$this->info->file = $fileName;
+		if(isset($this->info->centralDirectory[$fileName])) {
 			return new Data\CDFile($this->info->centralDirectory[$fileName]);
 		}
 
@@ -198,32 +149,19 @@ class Zip {
 			throw new InvalidArgumentException('No CDFile object specified');
 		}
 
-		$this->tempName = $file->tempName;
+		$localFileHeaderRaw = $this->getRange(
+			$file->offset,
+			$file->offset + $file->compressedSize - 1
+		);
 
-		# Get local file header
-		$start = $file->offset;
-		$end = $start + $file->compressedSize - 1;
-		$request = $this->httpRequest(array(
-			CURLOPT_URL => $this->info->url,
-			CURLOPT_HTTPGET => true,
-			CURLOPT_HEADER => false,
-			CURLOPT_FOLLOWLOCATION => true,
-			CURLOPT_RANGE => sprintf('%d-%d', $start, $end),
-			CURLOPT_WRITEFUNCTION => array($this, 'receiveLocalHeader')
-		));
+		if(!$localFileHeaderRaw) throw new RuntimeException('Local file header not fetched');
 
-		$local = new Data\LocalFile($this->info->localHeader);
+		$localFileHeader = new Data\LocalFile($localFileHeaderRaw);
 
 		# Get compressed file data
-		$start = $file->offset + $local->lenHeader;
-		$end = $start + $file->compressedSize - 1;
-		$request = $this->httpRequest(array(
-			CURLOPT_URL => $this->info->url,
-			CURLOPT_HTTPGET => true,
-			CURLOPT_HEADER => false,
-			CURLOPT_FOLLOWLOCATION => true,
-			CURLOPT_RANGE => sprintf('%d-%d', $start, $end),
-			CURLOPT_WRITEFUNCTION => array($this, 'receiveData')
+		$this->putTemp($file, $this->getRange(
+			$file->offset + $localFileHeader->lenHeader,
+			$file->offset + $localFileHeader->lenHeader + $file->compressedSize - 1
 		));
 
 		if($output) {
@@ -243,7 +181,7 @@ class Zip {
 	 * @param $conf cURL config array
 	 * @return array
 	 */
-	protected function httpRequest($conf) {
+	private function httpRequest($conf) {
 		$ch = curl_init();
 
 		curl_setopt_array($ch, $conf);
@@ -268,4 +206,35 @@ class Zip {
 
 		return $info;
 	}
+
+	/**
+	 * Writes a temporary file
+	 * @param $file
+	 * @param $data
+	 * @return int
+	 */
+	private function putTemp(Data\CDFile $file, $data) {
+		$f = fopen($file->tempName, 'a');
+		fputs($f, $data);
+		fclose($f);
+		return strlen($data);
+	}
+
+	/**
+	 * Fetches a byte range from the global file URL
+	 * @param $start
+	 * @param $end
+	 * @return string
+	 */
+	private function getRange($start, $end) {
+		return $this->httpRequest(array(
+			CURLOPT_URL => $this->info->url,
+			CURLOPT_HTTPGET => true,
+			CURLOPT_HEADER => false,
+			CURLOPT_FOLLOWLOCATION => true,
+			CURLOPT_RANGE => sprintf('%d-%d', $start, $end),
+			CURLOPT_RETURNTRANSFER => true
+		))['response'];
+	}
+
 }

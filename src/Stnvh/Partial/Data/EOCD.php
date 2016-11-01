@@ -15,7 +15,7 @@ class EOCD extends PartialData {
 		'CDEntries' => array(2, 'v*'),
 		'CDSize' => array(4, 'V*'),
 		'CDOffset' => array(4, 'V*'),
-		'lenComment' => array(4,  'V*'),
+		'lenComment' => array(2,  'V*'),
 		'comment' => array('lenComment', false)
 	);
 }

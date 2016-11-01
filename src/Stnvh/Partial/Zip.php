@@ -141,10 +141,9 @@ class Zip {
 	/**
 	 * Returns the specified file from within the zip
 	 * @param $file The CDFile object to download
-	 * @param $output Output the file to the browser instead of returning
 	 * @return true|string
 	 */
-	public function get(Data\CDFile $file, $output = false) {
+	public function get(Data\CDFile $file) {
 		if(!$file) {
 			throw new InvalidArgumentException('No CDFile object specified');
 		}
@@ -163,15 +162,6 @@ class Zip {
 			$file->offset + $localFileHeader->lenHeader,
 			$file->offset + $localFileHeader->lenHeader + $file->compressedSize - 1
 		));
-
-		if($output) {
-			header(sprintf('Content-Disposition: attachment; filename="%s"', $file->filename));
-			header(sprintf('Content-Length: %d', $file->size));
-			header('Pragma: public');
-			header('Cache-Control: must-revalidate, post-check=0, pre-check=0');
-			echo $file->get();
-			return true;
-		}
 
 		return $file->get();
 	}

@@ -103,7 +103,9 @@ class Zip {
 				continue;
 			}
 
-			$this->info->centralDirectory[$entry->name] = $entry;
+			$this->info->centralDirectory[$entry->name] = $raw;
+
+			unset($entry);
 		}
 
 		unset($cdEntries);
